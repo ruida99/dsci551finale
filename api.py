@@ -112,7 +112,7 @@ def run_commands(CONVERSATION_HISTORY):
         try:
             exec(exec_code)
         except Exception as e:
-            print(f"Error executing command: {e.to_string}")
+            print(f"Error executing command: {str(e)}")
         print("\n####### #END OUTPUT# #######")
         CONVERSATION_HISTORY.append({"role": "assistant", "content": response.choices[0].message.content})
 
