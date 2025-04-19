@@ -1,9 +1,11 @@
 from openai import OpenAI
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import sys
 import pymysql
 import pymongo
+
+
 client = OpenAI(api_key=open("key.txt", "r").read())
 
 def set_up():
@@ -86,24 +88,40 @@ def run_commands():
         exec(response.choices[0].message.content)
         CONVERSATION_HISTORY.append({"role": "assistant", "content": response.choices[0].message.content})
 
-def search_engin(message, df):
-    response = client.chat.completions.create(
-        model="gpt-4.1-nano",
-        messages=[
-            {"role": "user", "content": message},
-            {"role": "system", "content": f"you are a database query generator which only returns the desired db query with nothing else, and you know the database structure is {df.to_string(index=False)}"}
-        ]
-    )
+def search_engin():
+    while True:
+        message = input("Enter your message: ")
+        if message.lower() == "exit":
+            break
+        dbs = set_up()
+        response = client.chat.completions.create(
+            model="gpt-4.1-nano",
+            messages=[
+                {"role": "user", "content": message},
+                {"role": "system", "content": f"you are a database query generator which only returns the desired sql query with nothing else, and you know the database structure is {dbs.to_string(index=False)}"}
+            ]
+        )
+        engine = create_engine('mysql+pymysql://root:NewPassword@localhost/Banking')
+        sql =  response.choices[0].message.content
+        try:
+            if (sql.strip().upper().startswith("INSERT") or sql.strip().upper().startswith("UPDATE")
+                    or sql.strip().upper().startswith("DELETE") or sql.strip().upper().startswith("CREATE")
+                    or sql.strip().upper().startswith("DROP")):
+                with engine.connect() as conn:
+                    conn.execute(text(sql))
+                    conn.commit()
+                    print("Query executed successfully.")
+            else:
+                respond = pd.read_sql(sql, engine)
+                print(respond)
+        except Exception as e:
+            print(f"query failed because of {e}")
 
-    engine = create_engine('mysql+pymysql://root:NewPassword@localhost/Banking')
-    sql =  response.choices[0].message.content
-    respond = pd.read_sql(sql, engine)
-    print(respond)
+
 
 
 if __name__ == "__main__":
-    df = set_up()
-    search_engin(sys.argv[1], df)
+    search_engin()
 
     # response = client.chat.completions.create(
     #     model="gpt-4.1-nano",
