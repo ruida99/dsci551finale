@@ -3,6 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 import sys
 import pymysql
+import pymongo
 client = OpenAI(api_key=open("key.txt", "r").read())
 
 def set_up():
@@ -12,6 +13,37 @@ def set_up():
             {"role": "user", "content":"can you write me sql code which returns me all my column names in my database from all tables"},
             {"role": "system",
              "content": "you are a database query generator which only returns the desired db query with nothing else"}
+        ]
+    )
+    engine = create_engine('mysql+pymysql://root:NewPassword@localhost/Banking')
+    sql = response.choices[0].message.content
+    df = pd.read_sql(sql, engine)
+    return df
+
+CONVERS
+
+def set_up_mongo():
+    mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
+    # List all databases
+    databases = mongo_client.list_database_names()
+    print("Databases:")
+    for db_name in databases:
+        print(f"- {db_name}")
+        # List all collections in the database
+        db = mongo_client[db_name]
+        collections = db.list_collection_names()
+        print("  Collections:")
+        for collection_name in collections:
+            print(f"  - {collection_name}")
+    
+    
+    response = client.chat.completions.create(
+        model="gpt-4.1-nano",
+        
+        messages=[
+            {"role": "user", "content":"can you write me sql code which returns me all my column names in my database from all tables"},
+            {"role": "system",
+             "content": "This is "}
         ]
     )
     engine = create_engine('mysql+pymysql://root:NewPassword@localhost/Banking')
@@ -37,5 +69,27 @@ def search_engin(message, df):
 
 
 if __name__ == "__main__":
-    df = set_up()
-    search_engin(sys.argv[1], df)
+    # df = set_up()
+    # search_engin(sys.argv[1], df)
+
+    # response = client.chat.completions.create(
+    #     model="gpt-4.1-nano",
+    #     messages=[
+    #         {"role": "user", "content": "Hello World!"},
+    #         # {"role": "system", "content": f"you are a database query generator which only returns the desired db query with nothing else, and you know the database structure is {df.to_string(index=False)}"}
+    #     ]
+    # )
+    # print(response.choices[0].message.content)
+    # Connect to the local MongoDB instance
+    mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
+    # List all databases
+    databases = mongo_client.list_database_names()
+    print("Databases:")
+    for db_name in databases:
+        print(f"- {db_name}")
+        # List all collections in the database
+        db = mongo_client[db_name]
+        collections = db.list_collection_names()
+        print("  Collections:")
+        for collection_name in collections:
+            print(f"  - {collection_name}")
