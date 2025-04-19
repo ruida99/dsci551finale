@@ -7,15 +7,17 @@ import pymongo
 client = OpenAI(api_key=open("key.txt", "r").read())
 
 def set_up():
+    sql_root = 'mysql+pymysql://root:NewPassword@localhost/Banking'
+    db_name = sql_root.split('/')[-1]
     response = client.chat.completions.create(
         model="gpt-4.1-nano",
         messages=[
-            {"role": "user", "content":"can you write me sql code which returns me all my column names in my database from all tables"},
+            {"role": "user", "content":f"can you write me sql code for Mysql which returns me all my column names in my database from all tables and my database name is {db_name}"},
             {"role": "system",
              "content": "you are a database query generator which only returns the desired db query with nothing else"}
         ]
     )
-    engine = create_engine('mysql+pymysql://root:NewPassword@localhost/Banking')
+    engine = create_engine(sql_root)
     sql = response.choices[0].message.content
     df = pd.read_sql(sql, engine)
     return df
@@ -64,18 +66,15 @@ def search_engin(message, df):
         ]
     )
 
-    print(response.choices[0].message.content)
     engine = create_engine('mysql+pymysql://root:NewPassword@localhost/Banking')
-
     sql =  response.choices[0].message.content
-    df = pd.read_sql(sql, engine)
-
-    print(df)
+    respond = pd.read_sql(sql, engine)
+    print(respond)
 
 
 if __name__ == "__main__":
-    # df = set_up()
-    # search_engin(sys.argv[1], df)
+    df = set_up()
+    search_engin(sys.argv[1], df)
 
     # response = client.chat.completions.create(
     #     model="gpt-4.1-nano",
@@ -98,4 +97,4 @@ if __name__ == "__main__":
     #     print("  Collections:")
     #     for collection_name in collections:
     #         print(f"  - {collection_name}")
-    set_up_mongo()
+    #set_up_mongo()
