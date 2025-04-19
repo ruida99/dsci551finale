@@ -117,20 +117,37 @@ def run_commands():
         CONVERSATION_HISTORY.append({"role": "assistant", "content": response.choices[0].message.content})
 
 def search_engin():
+    history = []
+    dbs = set_up()
+    response = client.chat.completions.create(
+        model="gpt-4.1-nano",
+        messages=[
+            {"role": "user", "content": f"remember the database structure is {dbs.to_string(index=False)}"},
+            {"role": "system",
+             "content": f"you are a database query generator which only returns the desired sql query with nothing else."}
+        ]
+    )
+    history.append({"role": "user", "content": f"remember the database structure is {dbs.to_string(index=False)}"})
+    history.append({"role": "system",
+             "content": f"you are a database query generator which only returns the desired sql query with nothing else."})
+    history.append({"role": "assistant","content": response.choices[0].message.content})
     while True:
         message = input("Enter your message: ")
         if message.lower() == "exit":
             break
-        dbs = set_up()
+        history.append({"role": "system", "content": message})
         response = client.chat.completions.create(
             model="gpt-4.1-nano",
-            messages=[
-                {"role": "user", "content": message},
-                {"role": "system", "content": f"you are a database query generator which only returns the desired sql query with nothing else, and you know the database structure is {dbs.to_string(index=False)}"}
-            ]
-        )
+            messages=history)
+        history.append({"role": "assistant", "content": response.choices[0].message.content})
         engine = create_engine('mysql+pymysql://root:NewPassword@localhost/Banking')
         sql =  response.choices[0].message.content
+        if sql.startswith("```sql"):
+            sql = sql[6:].strip()
+        if sql.endswith("```"):
+            sql = sql[:-3].strip()
+        if sql.startswith("```"):
+            sql = sql[3:].strip()
         try:
             if (sql.strip().upper().startswith("INSERT") or sql.strip().upper().startswith("UPDATE")
                     or sql.strip().upper().startswith("DELETE") or sql.strip().upper().startswith("CREATE")
@@ -149,27 +166,12 @@ def search_engin():
 
 
 if __name__ == "__main__":
-    search_engin()
-
-    # response = client.chat.completions.create(
-    #     model="gpt-4.1-nano",
-    #     messages=[
-    #         {"role": "user", "content": "Hello World!"},
-    #         # {"role": "system", "content": f"you are a database query generator which only returns the desired db query with nothing else, and you know the database structure is {df.to_string(index=False)}"}
-    #     ]
-    # )
-    # print(response.choices[0].message.content)
-    # Connect to the local MongoDB instance
-    # mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
-    # # List all databases
-    # databases = mongo_client.list_database_names()
-    # print("Databases:")
-    # for db_name in databases:
-    #     print(f"- {db_name}")
-    #     # List all collections in the database
-    #     db = mongo_client[db_name]
-    #     collections = db.list_collection_names()
-    #     print("  Collections:")
-    #     for collection_name in collections:
-    #         print(f"  - {collection_name}")
-    #set_up_mongo()
+    while True:
+        database_choice = input("choose a database to query (sql or mongo or exit): ")
+        if database_choice.lower() == "exit":
+            break
+        if database_choice.lower() == "sql":
+            search_engin()
+        elif database_choice.lower() == "mongo":
+            set_up_mongo()
+            run_commands()
