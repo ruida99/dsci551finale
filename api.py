@@ -20,36 +20,41 @@ def set_up():
     df = pd.read_sql(sql, engine)
     return df
 
-CONVERS
+CONVERSATION_HISTORY = []
 
 def set_up_mongo():
     mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
     # List all databases
     databases = mongo_client.list_database_names()
-    print("Databases:")
+    database_collections_string = ""
     for db_name in databases:
-        print(f"- {db_name}")
+        database_collections_string += f"Database: {db_name}\n"
         # List all collections in the database
         db = mongo_client[db_name]
         collections = db.list_collection_names()
-        print("  Collections:")
         for collection_name in collections:
-            print(f"  - {collection_name}")
+            database_collections_string += f"  Collection: {collection_name}\n"
+    # print(database_collections_string)
+    # print("Databases:")
+    # for db_name in databases:
+    #     print(f"- {db_name}")
+    #     # List all collections in the database
+    #     db = mongo_client[db_name]
+    #     collections = db.list_collection_names()
+    #     print("  Collections:")
+    #     for collection_name in collections:
+    #         print(f"  - {collection_name}")
     
-    
+    CONVERSATION_HISTORY.append( {"role": "system", "content": "We are going to pass all database and collections in the database to you, please remember them"} )
+    CONVERSATION_HISTORY.append({"role": "system", "content": database_collections_string} )
     response = client.chat.completions.create(
-        model="gpt-4.1-nano",
         
-        messages=[
-            {"role": "user", "content":"can you write me sql code which returns me all my column names in my database from all tables"},
-            {"role": "system",
-             "content": "This is "}
-        ]
+        model="gpt-4.1-nano",
+        messages=CONVERSATION_HISTORY
     )
-    engine = create_engine('mysql+pymysql://root:NewPassword@localhost/Banking')
-    sql = response.choices[0].message.content
-    df = pd.read_sql(sql, engine)
-    return df
+
+    print(response.choices[0].message.content)
+
 def search_engin(message, df):
     response = client.chat.completions.create(
         model="gpt-4.1-nano",
@@ -81,15 +86,16 @@ if __name__ == "__main__":
     # )
     # print(response.choices[0].message.content)
     # Connect to the local MongoDB instance
-    mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
-    # List all databases
-    databases = mongo_client.list_database_names()
-    print("Databases:")
-    for db_name in databases:
-        print(f"- {db_name}")
-        # List all collections in the database
-        db = mongo_client[db_name]
-        collections = db.list_collection_names()
-        print("  Collections:")
-        for collection_name in collections:
-            print(f"  - {collection_name}")
+    # mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
+    # # List all databases
+    # databases = mongo_client.list_database_names()
+    # print("Databases:")
+    # for db_name in databases:
+    #     print(f"- {db_name}")
+    #     # List all collections in the database
+    #     db = mongo_client[db_name]
+    #     collections = db.list_collection_names()
+    #     print("  Collections:")
+    #     for collection_name in collections:
+    #         print(f"  - {collection_name}")
+    set_up_mongo()
