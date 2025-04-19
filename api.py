@@ -6,21 +6,20 @@ import pymysql
 import pymongo
 client = OpenAI(api_key=open("key.txt", "r").read())
 
-def set_up():
-    sql_root = 'mysql+pymysql://root:NewPassword@localhost/Banking'
-    db_name = sql_root.split('/')[-1]
+def set_up(db_choice):
+    sql_root = f'mysql+pymysql://root:NewPassword@localhost/{db_choice}'
     response = client.chat.completions.create(
         model="gpt-4.1-nano",
         messages=[
-            {"role": "user", "content":f"can you write me sql code for Mysql which returns me all my column names in my database from all tables and my database name is {db_name}"},
+            {"role": "user", "content":f"can you write me sql code for Mysql which returns me all my column names in my database from all tables and my database name is {db_choice}"},
             {"role": "system",
-             "content": "you are a database query generator which only returns the desired db query with nothing else"}
+             "content": "you are a database query generator which only returns the desired Mysql query with nothing else"}
         ]
     )
     engine = create_engine(sql_root)
     sql = response.choices[0].message.content
     df = pd.read_sql(sql, engine)
-    return df
+    return df, engine
 
 def set_up_mongo(CONVERSATION_HISTORY):
     # choose database
@@ -117,51 +116,58 @@ def run_commands(CONVERSATION_HISTORY):
         print("\n####### #END OUTPUT# #######")
         CONVERSATION_HISTORY.append({"role": "assistant", "content": response.choices[0].message.content})
 
-def search_engin():
-    history = []
-    dbs = set_up()
-    response = client.chat.completions.create(
-        model="gpt-4.1-nano",
-        messages=[
-            {"role": "user", "content": f"remember the database structure is {dbs.to_string(index=False)}"},
-            {"role": "system",
-             "content": f"you are a database query generator which only returns the desired sql query with nothing else."}
-        ]
-    )
-    history.append({"role": "user", "content": f"remember the database structure is {dbs.to_string(index=False)}"})
-    history.append({"role": "system",
-             "content": f"you are a database query generator which only returns the desired sql query with nothing else."})
-    history.append({"role": "assistant","content": response.choices[0].message.content})
+def search_engin(db_choice):
+    #history = []
+    #dbs, engine = set_up()
+    # response = client.chat.completions.create(
+    #     model="gpt-4.1-nano",
+    #     messages=[
+    #         {"role": "system", "content": f"remember the database structure is {dbs.to_string(index=False)}"},
+    #         {"role": "system",
+    #          "content": f"you are a database query generator which only returns the desired sql query with nothing else."}
+    #     ]
+    # )
+    # history.append({"role": "system", "content": f"remember the database structure is {dbs.to_string(index=False)}"})
+    # history.append({"role": "system",
+    #          "content": f"you are a database query generator which only returns the desired sql query with nothing else."})
+    # history.append({"role": "assistant","content": response.choices[0].message.content})
     while True:
+        dbs, engine = set_up(db_choice)
         message = input("Enter your message: ")
         if message.lower() == "exit":
             break
-        history.append({"role": "system", "content": message})
+        #history.append({"role": "user", "content": message})
+        # print(history)
         response = client.chat.completions.create(
             model="gpt-4.1-nano",
-            messages=history)
-        history.append({"role": "assistant", "content": response.choices[0].message.content})
-        engine = create_engine('mysql+pymysql://root:NewPassword@localhost/Banking')
+            messages=[{"role": "system", "content": f"you are a database query generator which only returns the desired Mysql query with nothing else."
+                                                    f" And remember the database structure is {dbs.to_string(index=False)}"},
+                      {"role": "user", "content": message}])
+        #history.append({"role": "assistant", "content": response.choices[0].message.content})
         sql =  response.choices[0].message.content
+        # print("prosed code!!!" + sql)
         if sql.startswith("```sql"):
             sql = sql[6:].strip()
         if sql.endswith("```"):
             sql = sql[:-3].strip()
         if sql.startswith("```"):
             sql = sql[3:].strip()
-        try:
-            if (sql.strip().upper().startswith("INSERT") or sql.strip().upper().startswith("UPDATE")
-                    or sql.strip().upper().startswith("DELETE") or sql.strip().upper().startswith("CREATE")
-                    or sql.strip().upper().startswith("DROP")):
-                with engine.connect() as conn:
-                    conn.execute(text(sql))
-                    conn.commit()
+        for cmd in sql.strip().split(';'):
+            cmd = cmd.strip()
+            if not cmd:
+                continue
+            try:
+                if (cmd.strip().upper().startswith("INSERT") or cmd.strip().upper().startswith("UPDATE")
+                        or cmd.strip().upper().startswith("DELETE") or cmd.strip().upper().startswith("CREATE")
+                        or cmd.strip().upper().startswith("DROP")):
+                    with engine.begin() as conn:
+                        conn.execute(text(cmd))
                     print("Query executed successfully.")
-            else:
-                respond = pd.read_sql(sql, engine)
-                print(respond)
-        except Exception as e:
-            print(f"query failed because of {e}")
+                else:
+                    respond = pd.read_sql(cmd, engine)
+                    print(respond)
+            except Exception as e:
+                print(f"query failed because of {e}")
 
 
 
@@ -172,6 +178,12 @@ if __name__ == "__main__":
         if database_choice.lower() == "exit":
             break
         if database_choice.lower() == "sql":
-            search_engin()
+            while True:
+                try:
+                    db_choice = input('Please enter your database choice: ')
+                    search_engin(db_choice)
+                    break
+                except Exception as e:
+                    print(f"failed to choose database because: {e}")
         elif database_choice.lower() == "mongo":
             run_commands(CONVERSATION_HISTORY = [])
