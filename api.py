@@ -22,10 +22,7 @@ def set_up():
     df = pd.read_sql(sql, engine)
     return df
 
-CONVERSATION_HISTORY = []
-TARGETED_MONGO_DB = "lab3"
-
-def set_up_mongo():
+def set_up_mongo(CONVERSATION_HISTORY):
     # choose database
     TARGETED_MONGO_DB = input ("Enter the name of the database you want to target: ")
     mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
@@ -79,7 +76,11 @@ def set_up_mongo():
     print(response.choices[0].message.content)
     CONVERSATION_HISTORY.append({"role": "assistant", "content": response.choices[0].message.content})
     # print(CONVERSATION_HISTORY)
-def run_commands():
+    return TARGETED_MONGO_DB
+
+def run_commands(CONVERSATION_HISTORY):
+    TARGETED_MONGO_DB = set_up_mongo(CONVERSATION_HISTORY)
+
     mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
     mongo_targeted_db = mongo_client[TARGETED_MONGO_DB]
     while True:
@@ -112,7 +113,7 @@ def run_commands():
         try:
             exec(exec_code)
         except Exception as e:
-            print(f"Error executing command: {e}")
+            print(f"Error executing command: {e.to_string}")
         print("\n####### #END OUTPUT# #######")
         CONVERSATION_HISTORY.append({"role": "assistant", "content": response.choices[0].message.content})
 
@@ -173,5 +174,4 @@ if __name__ == "__main__":
         if database_choice.lower() == "sql":
             search_engin()
         elif database_choice.lower() == "mongo":
-            set_up_mongo()
-            run_commands()
+            run_commands(CONVERSATION_HISTORY = [])
