@@ -65,7 +65,7 @@ def set_up_mongo(CONVERSATION_HISTORY):
     # CONVERSATION_HISTORY.append({"role": "system", "content": "Here is an example of what a comment looks like in comments: "+ COMMENTS_EXAMPLE} )
     # CONVERSATION_HISTORY.append({"role": "system", "content": "Here is an example of what a movie looks like in movies: "+ MOVIES_EXAMPLE} )
 
-    CONVERSATION_HISTORY.append({"role": "system", "content": "From now on we are going to pass human input, and for the output we expect precisely executable python pymongo (i.e. runnable with exec() in python) code without markup to query the databases and tables. We want the python code to print expected results."} )
+    CONVERSATION_HISTORY.append({"role": "system", "content": "From now on we are going to pass human input, and for the output we expect precisely mongodb queries, like we would pass into mongosh, the mongo shell."} )
     response = client.chat.completions.create(
         
         model="gpt-4.1-mini",
@@ -87,7 +87,7 @@ def run_commands(CONVERSATION_HISTORY):
         if user_input.lower() == 'exit':
             break
         #TODO: consider adding mongodb query for show
-        CONVERSATION_HISTORY.append({"role": "system", "content": "Remember: for the output we expect precisely executable python pymongo (i.e. runnable with exec() in python) code without markup to query the databases and tables. We want the python code to print expected results."} )
+        CONVERSATION_HISTORY.append({"role": "system", "content": "Remember: for the output we expect precisely mongodb queries, like we would pass into mongosh, the mongo shell."} )
 
         CONVERSATION_HISTORY.append({"role": "user", "content": user_input})
         response = client.chat.completions.create(
@@ -96,26 +96,7 @@ def run_commands(CONVERSATION_HISTORY):
         )
         print("###### PROPOSED CODE ######\n" + response.choices[0].message.content + "\n####### PROPOSED CODE #######")
         exec_code = response.choices[0].message.content
-        if exec_code.startswith("```python"):
-            exec_code = exec_code[9:].strip()
-        if exec_code.endswith("```"):
-            exec_code = exec_code[:-3].strip()
-        if exec_code.startswith("```"):
-            exec_code = exec_code[3:].strip()
-        # TODO: see if code compiles
-        # try:
-        #     compile(code_string, '<string>', 'exec')
-        #     return True
-        # except SyntaxError:
-        #     return False
-        user_input = input("Execute proposed command? yes to do so: ")
-        if user_input.lower() == 'yes':
-            print("###### BEGIN OUTPUT ######\n")
-            try:
-                exec(exec_code)
-            except Exception as e:
-                print(f"Error executing command: {str(e)}")
-            print("\n####### #END OUTPUT# #######")
+        
         CONVERSATION_HISTORY.append({"role": "assistant", "content": response.choices[0].message.content})
 
 def search_engin(db_choice):
