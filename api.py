@@ -119,35 +119,18 @@ def run_commands(CONVERSATION_HISTORY):
         CONVERSATION_HISTORY.append({"role": "assistant", "content": response.choices[0].message.content})
 
 def search_engin(db_choice):
-    #history = []
-    #dbs, engine = set_up()
-    # response = client.chat.completions.create(
-    #     model="gpt-4.1-nano",
-    #     messages=[
-    #         {"role": "system", "content": f"remember the database structure is {dbs.to_string(index=False)}"},
-    #         {"role": "system",
-    #          "content": f"you are a database query generator which only returns the desired sql query with nothing else."}
-    #     ]
-    # )
-    # history.append({"role": "system", "content": f"remember the database structure is {dbs.to_string(index=False)}"})
-    # history.append({"role": "system",
-    #          "content": f"you are a database query generator which only returns the desired sql query with nothing else."})
-    # history.append({"role": "assistant","content": response.choices[0].message.content})
     while True:
         dbs, engine = set_up(db_choice)
         message = input("Enter your message: ")
         if message.lower() == "exit":
             break
-        #history.append({"role": "user", "content": message})
-        # print(history)
         response = client.chat.completions.create(
             model="gpt-4.1-nano",
             messages=[{"role": "system", "content": f"you are a database query generator which only returns the desired Mysql query with nothing else."
                                                     f" And remember the database structure is {dbs.to_string(index=False)}"},
                       {"role": "user", "content": message}])
-        #history.append({"role": "assistant", "content": response.choices[0].message.content})
         sql =  response.choices[0].message.content
-        # print("prosed code!!!" + sql)
+        print("prosed code!!!" + sql)
         if sql.startswith("```sql"):
             sql = sql[6:].strip()
         if sql.endswith("```"):
