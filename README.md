@@ -10,9 +10,9 @@ Install mysql server and create a local instance
 
 Create sql root for sqlalchemy engine and leave database name as variable to be specified during implementation step.
 
-##### pip install requirements.txt ###### on your venv to run the programs.
+**pip install requirements.txt** on your venv to run the programs.
 
-Acquire an OpenAI key to access ChatGPT, and put the key into ### key.txt ### in the same folder as the code.
+Acquire an OpenAI key to access ChatGPT, and put the key into **key.txt** in the same folder as the code.
 
 For MongoDB specifically, you can run the two files for different goals:
 
